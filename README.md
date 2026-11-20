@@ -32,7 +32,7 @@ The script picks the right build for your system, checks its SHA-256 checksum, a
 
 On Windows, or to install by hand, download a file from this repo's [Releases](../../releases) page and put `thumb` on your `PATH`. If you download it on a Mac with a browser, run `xattr -d com.apple.quarantine ./thumb` once, because the binaries aren't signed by Apple.
 
-Or build it yourself with Go 1.22 or later:
+Or build it yourself with Go 1.25 or later:
 
 ```
 git clone <this repo> && cd thumb
@@ -75,6 +75,8 @@ Each publish adds a new entry, so your published history is a log, the way Carma
 finger alice.bsky.social@yourserver.com
 ```
 
+By default the gateway only connects to public internet addresses. Strangers choose what it looks up, and their DID documents choose which servers it contacts, so without that rule they could point it at your private network. Add `--allow-private` only on a trusted LAN or for testing.
+
 `finger` treats the last `@` as the host, so the gateway receives `alice.bsky.social` and looks that user up on the AT Protocol. On another port, use `printf 'alice.bsky.social\r\n' | nc yourserver.com 7979`. A query starting with `/W` returns the long format. Forwarding is refused, and the gateway handles at most 64 lookups at once.
 
 ## How it works
@@ -104,7 +106,7 @@ The `release` workflow runs GoReleaser. It builds all eight binaries, packages t
 
 ## Environment variables
 
-`THUMB_PLAN`, `THUMB_COLLECTION`, `THUMB_APP_PASSWORD` (for scripted login), `THUMB_CONFIG_DIR`, `THUMB_APPVIEW`, `THUMB_PLC`.
+`THUMB_PLAN`, `THUMB_COLLECTION`, `THUMB_APP_PASSWORD` (for scripted login), `THUMB_CONFIG_DIR`, `THUMB_APPVIEW`, `THUMB_PLC`, and `THUMB_ALLOW_HTTP_PDS=1` (allows a plain-HTTP PDS; for local test networks only, since your password and tokens would cross the network unencrypted).
 
 ## Development
 

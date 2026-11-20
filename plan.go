@@ -64,6 +64,8 @@ func fetchDisplayName(id *ident) string {
 
 // sanitize strips control characters (except newline and tab) so a plan can't
 // inject terminal escape codes: the classic finger hole (RFC 1288 sec. 3.3).
+// Everything that came from the network goes through this before printing,
+// including error messages from remote servers.
 func sanitize(s string) string {
 	if !utf8.ValidString(s) {
 		s = strings.ToValidUTF8(s, "�")
@@ -73,6 +75,11 @@ func sanitize(s string) string {
 			return r
 		}
 		if r < 0x20 || (r >= 0x7f && r <= 0x9f) {
+			return -1
+		}
+		// Invisible text-direction controls can make a line display
+		// differently from what it says ("Trojan Source" style tricks).
+		if (r >= 0x202a && r <= 0x202e) || (r >= 0x2066 && r <= 0x2069) {
 			return -1
 		}
 		return r
@@ -108,7 +115,7 @@ func render(user string, limit int, long bool) (string, error) {
 	var b strings.Builder
 	b.WriteString(strings.TrimRight(fmt.Sprintf("Login: %-38sName: %s", handle, name), " ") + "\n")
 	if long {
-		fmt.Fprintf(&b, "DID:   %s\nPDS:   %s\n", id.DID, id.PDS)
+		fmt.Fprintf(&b, "DID:   %s\nPDS:   %s\n", sanitize(id.DID), sanitize(id.PDS))
 	}
 	if len(plans) == 0 {
 		b.WriteString("No Plan.\n")

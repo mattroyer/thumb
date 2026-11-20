@@ -34,6 +34,11 @@ func (a *app) cmdLogin(args []string) error {
 	if err != nil {
 		return err
 	}
+	// Only send a password to the server a verified handle points to.
+	if !id.Verified {
+		return fmt.Errorf("can't verify that %s belongs to %s, so thumb won't send it your password. "+
+			"Check the handle in your account settings", handle, id.DID)
+	}
 	handle = id.Handle
 
 	password := os.Getenv("THUMB_APP_PASSWORD")

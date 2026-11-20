@@ -18,7 +18,9 @@ import (
 	"time"
 )
 
-const testDID = "did:plc:testuser123"
+const testDID = "did:plc:abcdefghijklmnopqrstuvwx"
+
+var fakePDSURL string
 
 // fakePDS is a tiny in-memory PDS: enough XRPC to exercise every command.
 type fakePDS struct {
@@ -138,6 +140,7 @@ func setup(t *testing.T) *fakePDS {
 	pds := &fakePDS{access: "access-1"}
 	srv := httptest.NewServer(pds)
 	t.Cleanup(srv.Close)
+	fakePDSURL = srv.URL
 
 	oldH, oldD := resolveHandle, resolveDID
 	resolveHandle = func(h string) (string, error) {

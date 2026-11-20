@@ -126,7 +126,7 @@ func (a *app) run(args []string) int {
 	case err == errSilent:
 		return 1
 	default:
-		fmt.Fprintf(a.errw, "thumb: %v\n", err)
+		fmt.Fprintf(a.errw, "thumb: %s\n", sanitize(err.Error()))
 		return 1
 	}
 }
@@ -183,7 +183,7 @@ func (a *app) cmdFinger(args []string) error {
 		}
 		s, err := render(u, *n, *long)
 		if err != nil {
-			fmt.Fprintf(a.errw, "finger: %v\n", err)
+			fmt.Fprintf(a.errw, "finger: %s\n", sanitize(err.Error()))
 			failed = true
 			continue
 		}

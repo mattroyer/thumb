@@ -12,13 +12,18 @@ import (
 )
 
 func (a *app) cmdServe(args []string) error {
-	fs := a.flags("serve", "thumb serve [--host 0.0.0.0] [--port 79] [-n 1]")
+	fs := a.flags("serve", "thumb serve [--host 0.0.0.0] [--port 79] [-n 1] [--allow-private]")
 	host := fs.String("host", "0.0.0.0", "address to listen on")
 	port := fs.Int("port", 79, "port to listen on (79 usually needs root)")
 	n := fs.Int("n", 1, "plan entries per response")
+	allowPrivate := fs.Bool("allow-private", false,
+		"let lookups reach private and local network addresses (only for a trusted LAN or testing)")
 	if _, err := parseFlags(fs, args); err != nil {
 		return err
 	}
+	// Anyone who can reach the gateway chooses what it looks up, so by default
+	// it only talks to public internet addresses. See newHTTPClient.
+	httpClient = newHTTPClient(!*allowPrivate)
 	ln, err := net.Listen("tcp", net.JoinHostPort(*host, strconv.Itoa(*port)))
 	if err != nil {
 		return err
@@ -75,7 +80,7 @@ func handleFinger(c net.Conn, n int) {
 		out = "finger: forwarding is not supported.\n"
 	default:
 		if s, err := render(q, n, long); err != nil {
-			out = "finger: " + err.Error() + "\n"
+			out = "finger: " + sanitize(err.Error()) + "\n"
 		} else {
 			out = s
 		}
