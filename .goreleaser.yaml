@@ -1,0 +1,67 @@
+# GoReleaser v2. Push a tag like v0.1.0 and the release workflow builds
+# everything below and attaches it to a GitHub Release.
+version: 2
+project_name: thumb
+
+before:
+  hooks:
+    - go test ./...
+
+builds:
+  - env:
+      - CGO_ENABLED=0
+    goos: [linux, darwin, windows, freebsd]
+    goarch: [amd64, arm64]
+    flags: [-trimpath]
+    ldflags:
+      - -s -w -X main.version={{ .Version }}
+
+archives:
+  # No version in the file name, so the newest release is always at
+  # https://github.com/<owner>/thumb/releases/latest/download/thumb_<os>_<arch>.tar.gz
+  # which is what https://thumbplan.date/install.sh downloads.
+  - name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
+    formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    files:
+      - README.md
+      - LICENSE*
+      - lexicon/*
+
+checksum:
+  name_template: checksums.txt
+
+changelog:
+  sort: asc
+  filters:
+    exclude: ["^docs:", "^test:", "^chore:"]
+
+# ---------------------------------------------------------------------------
+# Optional: `brew install <your-github-name>/tap/thumb`
+# 1. Create a public repo named homebrew-tap.
+# 2. Add a token with write access to it as the HOMEBREW_TAP_TOKEN secret.
+# 3. Uncomment this block.
+# The binaries aren't signed by Apple, so Homebrew users on macOS may need to run
+# `xattr -dr com.apple.quarantine $(which thumb)` once. See the README.
+#
+# homebrew_casks:
+#   - name: thumb
+#     homepage: https://github.com/your-github-name/thumb
+#     description: finger and .plan files over the AT Protocol
+#     repository:
+#       owner: your-github-name
+#       name: homebrew-tap
+#       token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+#
+# Optional: `scoop install thumb` on Windows (same idea, a scoop-bucket repo)
+#
+# scoops:
+#   - name: thumb
+#     homepage: https://github.com/your-github-name/thumb
+#     description: finger and .plan files over the AT Protocol
+#     repository:
+#       owner: your-github-name
+#       name: scoop-bucket
+#       token: "{{ .Env.SCOOP_BUCKET_TOKEN }}"

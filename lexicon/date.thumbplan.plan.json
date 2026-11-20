@@ -1,0 +1,28 @@
+{
+  "lexicon": 1,
+  "id": "date.thumbplan.plan",
+  "description": "One entry in a user's .plan file, in the spirit of finger(1). Entries are appended over time; the newest is the current plan.",
+  "defs": {
+    "main": {
+      "type": "record",
+      "key": "tid",
+      "record": {
+        "type": "object",
+        "required": ["text", "createdAt"],
+        "properties": {
+          "text": {
+            "type": "string",
+            "maxLength": 100000,
+            "description": "Plain-text plan content. Rendered verbatim, monospace, no markup."
+          },
+          "createdAt": { "type": "string", "format": "datetime" },
+          "updatedAt": {
+            "type": "string",
+            "format": "datetime",
+            "description": "Set when an entry is amended in place."
+          }
+        }
+      }
+    }
+  }
+}
