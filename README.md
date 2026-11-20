@@ -67,6 +67,25 @@ Write in it whenever you like, in whatever editor you like, then run `thumb post
 
 Each publish adds a new entry, so your published history is a log, the way Carmack's was. The file always holds your current plan.
 
+### Your list and tab completion
+
+thumb remembers everyone you've thumbed, newest first, in a private text file next to your login. It's never published anywhere.
+
+```
+thumb list            # everyone you've thumbed
+thumb list --clear    # forget them all
+```
+
+That list powers tab completion, so `thumb al<Tab>` finishes `alice.bsky.social`. Turn it on once:
+
+```
+echo 'source <(thumb completion zsh)' >> ~/.zshrc                                  # zsh (macOS default)
+echo 'eval "$(thumb completion bash)"' >> ~/.bashrc                                # bash
+thumb completion fish > ~/.config/fish/completions/thumb.fish                      # fish
+```
+
+Set `THUMB_NO_LIST=1` if you'd rather thumb didn't keep a list.
+
 ### The real `finger` command
 
 `thumb serve` runs a finger gateway. On port 79 (which needs root, or `sudo setcap cap_net_bind_service=+ep ./thumb`), the classic client just works:
@@ -106,7 +125,7 @@ The `release` workflow runs GoReleaser. It builds all eight binaries, packages t
 
 ## Environment variables
 
-`THUMB_PLAN`, `THUMB_COLLECTION`, `THUMB_APP_PASSWORD` (for scripted login), `THUMB_CONFIG_DIR`, `THUMB_APPVIEW`, `THUMB_PLC`, and `THUMB_ALLOW_HTTP_PDS=1` (allows a plain-HTTP PDS; for local test networks only, since your password and tokens would cross the network unencrypted).
+`THUMB_PLAN`, `THUMB_NO_LIST=1` (don't keep a list), `THUMB_COLLECTION`, `THUMB_APP_PASSWORD` (for scripted login), `THUMB_CONFIG_DIR`, `THUMB_APPVIEW`, `THUMB_PLC`, and `THUMB_ALLOW_HTTP_PDS=1` (allows a plain-HTTP PDS; for local test networks only, since your password and tokens would cross the network unencrypted).
 
 ## Development
 

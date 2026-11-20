@@ -31,6 +31,8 @@ Usage:
   thumb post [-f file] [--amend]    publish your plan file as it is now
   thumb post -m text                publish text directly (or pipe it in on stdin)
   thumb delete <rkey|latest>        delete a plan entry
+  thumb list [--clear]              everyone you've thumbed, newest first
+  thumb completion bash|zsh|fish    print a tab-completion script for your shell
   thumb migrate [--dry-run]         move entries from the old dev.thumb.plan name
   thumb serve [--port 79]           run an RFC 1288 finger gateway
   thumb version
@@ -39,6 +41,7 @@ Your plan file is ~/.plan unless you pass -f or set THUMB_PLAN.
 
 Environment:
   THUMB_PLAN          path to your plan file (default ~/.plan)
+  THUMB_NO_LIST=1     don't remember who you thumb
   THUMB_COLLECTION    record collection (default date.thumbplan.plan)
   THUMB_APP_PASSWORD  app password for non-interactive login
   THUMB_CONFIG_DIR    where the session is stored
@@ -47,6 +50,7 @@ Environment:
 var commands = map[string]bool{
 	"finger": true, "login": true, "logout": true, "whoami": true,
 	"post": true, "edit": true, "delete": true, "migrate": true, "serve": true,
+	"list": true, "completion": true,
 }
 
 // errSilent means the error was already reported; just exit non-zero.
@@ -106,6 +110,10 @@ func (a *app) run(args []string) int {
 		err = a.cmdPost(rest)
 	case "edit":
 		err = a.cmdEdit(rest)
+	case "list":
+		err = a.cmdList(rest)
+	case "completion":
+		err = a.cmdCompletion(rest)
 	case "migrate":
 		err = a.cmdMigrate(rest)
 	case "delete":
@@ -188,6 +196,7 @@ func (a *app) cmdFinger(args []string) error {
 			continue
 		}
 		fmt.Fprint(a.out, s)
+		rememberThumbed(normalize(u))
 	}
 	if failed {
 		return errSilent
