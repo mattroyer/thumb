@@ -108,6 +108,9 @@ func openEditor(path string) error {
 	return nil
 }
 
+// maxPlanBytes matches maxLength in lexicon/date.thumbplan.plan.json.
+const maxPlanBytes = 100000
+
 // publish adds text as a new plan entry, or replaces the latest one if amend
 // is set. It skips posting a duplicate of your latest entry.
 func (a *app) publish(s *session, text string, amend bool) error {
@@ -115,6 +118,9 @@ func (a *app) publish(s *session, text string, amend bool) error {
 	if strings.TrimSpace(text) == "" {
 		fmt.Fprintln(a.out, "Empty plan; nothing published.")
 		return nil
+	}
+	if len(text) > maxPlanBytes {
+		return fmt.Errorf("that plan is %d bytes; the limit is %d. Plans are meant to be short", len(text), maxPlanBytes)
 	}
 	prev, err := latestOwn(s)
 	if err != nil {

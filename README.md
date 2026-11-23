@@ -46,6 +46,9 @@ go build -o thumb .
 | `thumb alice.bsky.social` | Show their latest plan |
 | `thumb -n 10 alice.bsky.social` | Show their last 10 entries, like a Carmack-style log |
 | `thumb -l alice.bsky.social` | Long format: also show their DID and PDS |
+| `thumb` | Show your own plan (once you're logged in) |
+| `thumb new` | Show who on your list has posted since you last read their plan |
+| `thumb name "Your Name"` | Set the name shown next to `Name:` (`thumb name` shows it, `thumb name ""` clears it) |
 | `thumb login` | Sign in with an **app password** (Bluesky > Settings > Privacy and security > App passwords) |
 | `thumb edit` | Open your plan file in `$EDITOR`; when you save and quit, publish it if it changed |
 | `thumb post` | Publish your plan file as it is now (after editing it in any editor you like) |
@@ -63,15 +66,16 @@ thumb edit -f ~/Documents/plan.txt          # one-off
 export THUMB_PLAN=~/.thumb/.plan            # permanent (put this in ~/.zshrc)
 ```
 
-Write in it whenever you like, in whatever editor you like, then run `thumb post` to publish it. Or run `thumb edit` to open it, write, save, and publish in one step. On a new computer, `thumb edit` creates the file from your latest published entry. thumb won't post a duplicate if the file matches your latest entry.
+Write in it whenever you like, in whatever editor you like, then run `thumb post` to publish it. Or run `thumb edit` to open it, write, save, and publish in one step. On a new computer, `thumb edit` creates the file from your latest published entry. thumb won't post a duplicate if the file matches your latest entry. Plans are capped at 100,000 bytes, which is plenty of room for a plan and stops a wrong file from being posted by accident.
 
 Each publish adds a new entry, so your published history is a log, the way Carmack's was. The file always holds your current plan.
 
 ### Your list and tab completion
 
-thumb remembers everyone you've thumbed, newest first, in a private text file next to your login. It's never published anywhere.
+thumb remembers everyone you've thumbed, and when, newest first, in a private text file next to your login. It's never published anywhere. `thumb new` uses those times to show who has posted (or amended an entry) since you last read their plan. Checking doesn't count as reading; only `thumb <handle>` does.
 
 ```
+thumb new             # who has posted since you last looked
 thumb list            # everyone you've thumbed
 thumb list --clear    # forget them all
 ```

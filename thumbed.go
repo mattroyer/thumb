@@ -7,50 +7,69 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
-// Everyone you've thumbed, newest first, one per line, in a private file
-// next to your login. Plain text on purpose: easy to read, edit or delete,
-// and trivial for shell completion to use. Never stored on the AT Protocol,
-// where it would be public.
+// Everyone you've thumbed, newest first, in a private file next to your
+// login. Each line is a handle, then a tab and when you last read their plan
+// (older files have just the handle). Plain text on purpose: easy to read,
+// edit or delete, and trivial for shell completion to use. Never stored on
+// the AT Protocol, where it would be public.
 
 const maxThumbed = 500
 
+type thumbed struct {
+	Handle string
+	Seen   time.Time // zero if unknown
+}
+
 func thumbedPath() string { return filepath.Join(configDir(), "thumbed") }
 
-func loadThumbed() []string {
+func loadThumbed() []thumbed {
 	f, err := os.Open(thumbedPath())
 	if err != nil {
 		return nil
 	}
 	defer f.Close()
-	var out []string
+	var out []thumbed
 	sc := bufio.NewScanner(f)
 	for sc.Scan() {
-		if h := strings.TrimSpace(sc.Text()); h != "" {
-			out = append(out, h)
+		h, when, _ := strings.Cut(strings.TrimSpace(sc.Text()), "\t")
+		if h = strings.TrimSpace(h); h == "" {
+			continue
 		}
+		t, _ := time.Parse(time.RFC3339Nano, strings.TrimSpace(when))
+		out = append(out, thumbed{Handle: h, Seen: t})
 	}
 	return out
 }
 
-// rememberThumbed moves handle to the top of the list. Failures are ignored:
-// a list that can't be saved shouldn't stop anyone from reading a plan.
+// rememberThumbed moves handle to the top of the list and stamps it with the
+// current time. Failures are ignored: a list that can't be saved shouldn't
+// stop anyone from reading a plan.
 func rememberThumbed(handle string) {
 	if handle == "" || os.Getenv("THUMB_NO_LIST") == "1" {
 		return
 	}
-	list := []string{handle}
-	for _, h := range loadThumbed() {
-		if h != handle && len(list) < maxThumbed {
-			list = append(list, h)
+	list := []thumbed{{Handle: handle, Seen: time.Now().UTC()}}
+	for _, t := range loadThumbed() {
+		if t.Handle != handle && len(list) < maxThumbed {
+			list = append(list, t)
 		}
+	}
+	var b strings.Builder
+	for _, t := range list {
+		b.WriteString(t.Handle)
+		if !t.Seen.IsZero() {
+			b.WriteString("\t" + t.Seen.UTC().Format(time.RFC3339Nano))
+		}
+		b.WriteString("\n")
 	}
 	if os.MkdirAll(configDir(), 0o700) != nil {
 		return
 	}
 	tmp := thumbedPath() + ".tmp"
-	if os.WriteFile(tmp, []byte(strings.Join(list, "\n")+"\n"), 0o600) == nil {
+	if os.WriteFile(tmp, []byte(b.String()), 0o600) == nil {
 		os.Rename(tmp, thumbedPath())
 	}
 }
@@ -68,8 +87,8 @@ func (a *app) cmdList(args []string) error {
 		fmt.Fprintln(a.out, "List cleared.")
 		return nil
 	}
-	for _, h := range loadThumbed() {
-		fmt.Fprintln(a.out, h)
+	for _, t := range loadThumbed() {
+		fmt.Fprintln(a.out, t.Handle)
 	}
 	return nil
 }
@@ -84,7 +103,7 @@ func (a *app) cmdCompletion(args []string) error {
 
 // Shell completion: commands for the first word, and handles from
 // `thumb list` everywhere a handle fits. After -f it completes files.
-const completionCommands = "finger login logout whoami post edit delete migrate serve list completion version help"
+const completionCommands = "finger login logout whoami post edit delete new name migrate serve list completion version help"
 
 var completions = map[string]string{
 	"bash": `# thumb completion for bash. Add to ~/.bashrc:  eval "$(thumb completion bash)"

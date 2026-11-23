@@ -24,10 +24,11 @@ var fakePDSURL string
 
 // fakePDS is a tiny in-memory PDS: enough XRPC to exercise every command.
 type fakePDS struct {
-	mu      sync.Mutex
-	access  string
-	records []fakeRec
-	n       int
+	mu        sync.Mutex
+	noProfile bool // getRecord on the profile says RecordNotFound unless one was stored
+	access    string
+	records   []fakeRec
+	n         int
 }
 
 type fakeRec struct {
@@ -72,7 +73,18 @@ func (f *fakePDS) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		reply(200, map[string]any{"records": out})
 	case "com.atproto.repo.getRecord":
-		reply(200, map[string]any{"value": map[string]any{"displayName": "Test \x1b[31mUser"}})
+		q := r.URL.Query()
+		for _, rec := range f.records {
+			if rec.coll == q.Get("collection") && rec.rkey == q.Get("rkey") {
+				reply(200, map[string]any{"cid": rec.cid, "value": rec.value})
+				return
+			}
+		}
+		if q.Get("collection") == "app.bsky.actor.profile" && !f.noProfile {
+			reply(200, map[string]any{"value": map[string]any{"displayName": "Test \x1b[31mUser"}})
+			return
+		}
+		reply(400, map[string]any{"error": "RecordNotFound", "message": "Could not locate record"})
 	case "com.atproto.server.createSession":
 		reply(200, map[string]any{"did": testDID, "handle": "test.example",
 			"accessJwt": f.access, "refreshJwt": "refresh-1"})

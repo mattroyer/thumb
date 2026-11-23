@@ -31,6 +31,9 @@ Usage:
   thumb post [-f file] [--amend]    publish your plan file as it is now
   thumb post -m text                publish text directly (or pipe it in on stdin)
   thumb delete <rkey|latest>        delete a plan entry
+  thumb                             your own plan (when logged in)
+  thumb new                         who on your list has posted since you last looked
+  thumb name ["Your Name"]          show or set the name shown next to Name:
   thumb list [--clear]              everyone you've thumbed, newest first
   thumb completion bash|zsh|fish    print a tab-completion script for your shell
   thumb migrate [--dry-run]         move entries from the old dev.thumb.plan name
@@ -50,7 +53,7 @@ Environment:
 var commands = map[string]bool{
 	"finger": true, "login": true, "logout": true, "whoami": true,
 	"post": true, "edit": true, "delete": true, "migrate": true, "serve": true,
-	"list": true, "completion": true,
+	"list": true, "completion": true, "new": true, "name": true,
 }
 
 // errSilent means the error was already reported; just exit non-zero.
@@ -79,8 +82,19 @@ func main() {
 
 func (a *app) run(args []string) int {
 	if len(args) == 0 {
-		fmt.Fprint(a.errw, usage)
-		return 2
+		// Like finger with no arguments: show your own plan if you're logged in.
+		s, err := loadSession()
+		if err != nil {
+			fmt.Fprint(a.errw, usage)
+			return 2
+		}
+		out, err := render(s.DID, 1, false)
+		if err != nil {
+			fmt.Fprintf(a.errw, "thumb: %s\n", sanitize(err.Error()))
+			return 1
+		}
+		fmt.Fprint(a.out, out)
+		return 0
 	}
 	switch args[0] {
 	case "-h", "--help", "help":
@@ -110,6 +124,10 @@ func (a *app) run(args []string) int {
 		err = a.cmdPost(rest)
 	case "edit":
 		err = a.cmdEdit(rest)
+	case "new":
+		err = a.cmdNew(rest)
+	case "name":
+		err = a.cmdName(rest)
 	case "list":
 		err = a.cmdList(rest)
 	case "completion":
